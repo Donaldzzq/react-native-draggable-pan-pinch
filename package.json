@@ -1,0 +1,39 @@
+{
+  "name": "react-native-draggable-pan-pinch",
+  "version": "0.1.0",
+  "description": "A React Native component for draggable, pannable, and pinchable views",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "publish-package": "node scripts/publish.js",
+    "test-local": "node scripts/test-local.js"
+  },
+  "keywords": [
+    "react-native",
+    "gesture",
+    "pan",
+    "pinch",
+    "zoom",
+    "drag",
+    "image"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-native": ">=0.60.0",
+    "react-native-gesture-handler": ">=2.0.0",
+    "react-native-reanimated": ">=2.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-native": "^0.70.0",
+    "typescript": "^4.9.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Donaldzzq/react-native-draggable-pan-pinch.git"
+  }
+}
