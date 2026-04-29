@@ -2,6 +2,9 @@
 
 A React Native component for creating draggable, pannable, and pinchable views. Perfect for image viewers, maps, and any interactive UI elements that require gesture controls.
 
+## DEMO on IOS
+https://github.com/user-attachments/assets/2b2a6086-816e-4526-b838-9889db5ff7ec
+
 ## Features
 
 - 🔄 Pinch to zoom (scaling)
@@ -41,35 +44,56 @@ cd ios && pod install && cd ..
 
 For React Native Reanimated, you may need additional setup. Please refer to the [official documentation](https://docs.swmansion.com/react-native-reanimated/docs/fundamentals/installation).
 
-## Usage
+## Usage with Custom icons
 
 ```jsx
 import React from 'react';
 import { View, Image } from 'react-native';
 import { DraggablePanPinch } from 'react-native-draggable-pan-pinch';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const App = () => {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={{ flex: 1 }}>
-        <DraggablePanPinch
-          enablePan={true}
-          enablePinch={true}
-          enableRotation={false}
-          maxScale={5}
-          minScale={0.5}
-          onScaleChange={(scale) => console.log('Scale:', scale)}
-          onPositionChange={(x, y) => console.log('Position:', x, y)}
-        >
+    <View style={styles.imageWrapper}>
+      <DraggablePanPinch
+        key={invoice.id}
+        style={styles.wholeFlex}
+        initialRotation={invoice.rotateDeg || 0}
+        minScale={0.5}
+        maxScale={5}
+        enableRotation={true}
+        rotateDegree={90}
+        zoomScale={ZOOM_STEP}
+        onRotationChange={handleImageRotationChange}
+        showButtons={{
+          rotateLeft: true,
+          rotateRight: true,
+          zoomIn: true,
+          zoomOut: true,
+          reset: true,
+        }}
+        actionButtons={{
+          rotateLeft: renderDraggableActionIcon("rotate-left"),
+          rotateRight: renderDraggableActionIcon("rotate-right"),
+          zoomIn: renderDraggableActionIcon("plus"),
+          zoomOut: renderDraggableActionIcon("minus"),
+          reset: renderDraggableActionIcon("backup-restore"),
+      }}
+      actionButtonsContainerStyle={styles.header}
+      actionButtonsStyle={styles.draggableActionButton}
+    >
+        {(displayOriginalPDF && presignedUrl.length > 0) ? (
+          <PdfViewer
+            style={styles.wholeFlex}
+            source={{ uri: presignedUrl }} />
+        ) : imgSrc && imgSrc.length > 0 ? (
           <Image
-            source={{ uri: 'https://picsum.photos/600/400' }}
-            style={{ width: '100%', height: '100%' }}
             resizeMode="contain"
+            style={styles.wholeFlex}
+            source={{ uri: imgSrc }}
           />
-        </DraggablePanPinch>
-      </View>
-    </GestureHandlerRootView>
+      ) : <View style={styles.wholeFlex} />}
+    </DraggablePanPinch>
+  </View>
   );
 };
 
