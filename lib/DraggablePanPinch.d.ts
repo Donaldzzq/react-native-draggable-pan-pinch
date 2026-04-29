@@ -1,16 +1,18 @@
 import React, { ReactNode } from "react";
-import { StyleProp, ViewStyle } from "react-native";
+import { StyleProp, ViewStyle, TextStyle } from "react-native";
 interface ActionButtons {
     zoomIn?: ReactNode;
     zoomOut?: ReactNode;
     rotateLeft?: ReactNode;
     rotateRight?: ReactNode;
+    reset?: ReactNode;
 }
 interface ShowActionButtons {
     zoomIn?: boolean;
     zoomOut?: boolean;
     rotateLeft?: boolean;
     rotateRight?: boolean;
+    reset?: boolean;
 }
 export interface DraggablePanPinchProps {
     children: ReactNode;
@@ -31,8 +33,9 @@ export interface DraggablePanPinchProps {
     actionButtons?: ActionButtons;
     actionButtonsContainerStyle?: StyleProp<ViewStyle>;
     actionButtonsStyle?: StyleProp<ViewStyle>;
+    actionButtonIconStyle?: StyleProp<TextStyle>;
     rotateDegree?: number;
     zoomScale?: number;
 }
-export declare const DraggablePanPinch: ({ children, style, initialScale, initialRotation, maxScale, minScale, boundaryX, boundaryY, enablePan, enablePinch, enableRotation, onScaleChange, onPositionChange, onRotationChange, showButtons, actionButtons, actionButtonsContainerStyle, actionButtonsStyle, rotateDegree, zoomScale, }: DraggablePanPinchProps) => React.JSX.Element;
+export declare const DraggablePanPinch: ({ children, style, initialScale, initialRotation, maxScale, minScale, boundaryX, boundaryY, enablePan, enablePinch, enableRotation, onScaleChange, onPositionChange, onRotationChange, showButtons, actionButtons, actionButtonsContainerStyle, actionButtonsStyle, actionButtonIconStyle, rotateDegree, zoomScale, }: DraggablePanPinchProps) => React.JSX.Element;
 export {};

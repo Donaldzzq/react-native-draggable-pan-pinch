@@ -96,6 +96,8 @@ export default App;
 | `onScaleChange` | (scale: number) => void | undefined | Callback when scale changes |
 | `onPositionChange` | (x: number, y: number) => void | undefined | Callback when position changes |
 | `onRotationChange` | (rotation: number) => void | undefined | Callback when rotation changes |
+| `showButtons.reset` | boolean | false | Show a reset button when the image scale, position, or rotation changes |
+| `actionButtons.reset` | ReactNode | ⟲ | Custom reset button content |
 
 ## Examples
 
