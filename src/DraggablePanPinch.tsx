@@ -1,13 +1,14 @@
 import React, { ReactNode } from "react";
-import { StyleSheet, Dimensions, ViewStyle, View, TouchableOpacity, Text } from "react-native";
+import { StyleProp, StyleSheet, useWindowDimensions, ViewStyle, View, TouchableOpacity, Text } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
-import { withTiming } from "react-native-reanimated";
 import Animated, {
+  cancelAnimation,
+  runOnJS,
+  runOnUI,
   useSharedValue,
   useAnimatedStyle,
+  withTiming,
 } from "react-native-reanimated";
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 interface ActionButtons {
   zoomIn?: ReactNode;
@@ -25,7 +26,7 @@ interface ShowActionButtons {
 
 export interface DraggablePanPinchProps {
   children: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   initialScale?: number;
   initialRotation?: number;
   maxScale?: number;
@@ -40,11 +41,16 @@ export interface DraggablePanPinchProps {
   onRotationChange?: (rotation: number) => void;
   showButtons?: ShowActionButtons;
   actionButtons?: ActionButtons;
-  actionButtonsContainerStyle?: ViewStyle;
-  actionButtonsStyle?: ViewStyle;
+  actionButtonsContainerStyle?: StyleProp<ViewStyle>;
+  actionButtonsStyle?: StyleProp<ViewStyle>;
   rotateDegree?: number;
   zoomScale?: number;
 }
+
+const clamp = (value: number, min: number, max: number) => {
+  "worklet";
+  return Math.min(max, Math.max(min, value));
+};
 
 export const DraggablePanPinch = ({
   children,
@@ -53,8 +59,8 @@ export const DraggablePanPinch = ({
   initialRotation = 0,
   maxScale = 5,
   minScale = 0.5,
-  boundaryX = SCREEN_WIDTH / 2,
-  boundaryY = SCREEN_HEIGHT / 2,
+  boundaryX,
+  boundaryY,
   enablePan = true,
   enablePinch = true,
   enableRotation = false,
@@ -73,107 +79,169 @@ export const DraggablePanPinch = ({
   rotateDegree = 90,
   zoomScale = 0.5,
 }: DraggablePanPinchProps) => {
-  const [rotation, setRotation] = React.useState(initialRotation);
-  // Shared values for animations
-  const scale = useSharedValue(initialScale);
-  const savedScale = useSharedValue(initialScale);
+  const { width, height } = useWindowDimensions();
+  const resolvedBoundaryX = boundaryX ?? width / 2;
+  const resolvedBoundaryY = boundaryY ?? height / 2;
+
+  const emitScaleChange = React.useCallback((nextScale: number) => {
+    onScaleChange?.(nextScale);
+  }, [onScaleChange]);
+
+  const emitPositionChange = React.useCallback((x: number, y: number) => {
+    onPositionChange?.(x, y);
+  }, [onPositionChange]);
+
+  const emitRotationChange = React.useCallback((nextRotation: number) => {
+    onRotationChange?.(nextRotation);
+  }, [onRotationChange]);
+
+  const clampedInitialScale = clamp(initialScale, minScale, maxScale);
+  const scale = useSharedValue(clampedInitialScale);
+  const savedScale = useSharedValue(clampedInitialScale);
+  const rotation = useSharedValue(initialRotation);
+  const savedRotation = useSharedValue(initialRotation);
   const positionX = useSharedValue(0);
   const positionY = useSharedValue(0);
   const startTranslateX = useSharedValue(0);
   const startTranslateY = useSharedValue(0);
+  const zoomFactor = 1 + zoomScale;
+
+  const animateScaleBy = React.useCallback((multiplier: number) => {
+    runOnUI((factor: number) => {
+      "worklet";
+
+      cancelAnimation(scale);
+      const nextScale = clamp(scale.value * factor, minScale, maxScale);
+      scale.value = withTiming(nextScale);
+      savedScale.value = nextScale;
+
+      if (onScaleChange) {
+        runOnJS(emitScaleChange)(nextScale);
+      }
+    })(multiplier);
+  }, [emitScaleChange, maxScale, minScale, onScaleChange, savedScale, scale]);
+
+  const animateRotationBy = React.useCallback((delta: number) => {
+    runOnUI((rotationDelta: number) => {
+      "worklet";
+
+      cancelAnimation(rotation);
+      const nextRotation = rotation.value + rotationDelta;
+      rotation.value = withTiming(nextRotation);
+      savedRotation.value = nextRotation;
+
+      if (onRotationChange) {
+        runOnJS(emitRotationChange)(nextRotation);
+      }
+    })(delta);
+  }, [emitRotationChange, onRotationChange, rotation, savedRotation]);
 
   const onPressRotateLeft = () => {
-    const value = rotation - rotateDegree;
-    setRotation(value);
-    onRotationChange?.(value);
-  }
+    animateRotationBy(-rotateDegree);
+  };
 
   const onPressRotateRight = () => {
-    const value = rotation + rotateDegree;
-    setRotation(value);
-    onRotationChange?.(value);
-  }
+    animateRotationBy(rotateDegree);
+  };
 
   const onPressZoomIn = () => {
-    scale.value = savedScale.value * (1 + zoomScale);
-    onScaleChange?.(scale.value);
-  }
+    animateScaleBy(zoomFactor);
+  };
 
   const onPressZoomOut = () => {
-    scale.value = savedScale.value * (1 - zoomScale);
-    onScaleChange?.(scale.value);
-  }
+    animateScaleBy(1 / zoomFactor);
+  };
 
-  // Pinch gesture for scaling
   const pinchGesture = Gesture.Pinch()
     .enabled(enablePinch)
-    .onUpdate((e: { scale: number }) => {
-      const newScale = savedScale.value * e.scale;
-      // Limit scale between minScale and maxScale
-      scale.value = Math.max(minScale, Math.min(maxScale, newScale));
-      onScaleChange?.(scale.value);
+    .onStart(() => {
+      savedScale.value = scale.value;
+    })
+    .onUpdate((e) => {
+      const nextScale = clamp(savedScale.value * e.scale, minScale, maxScale);
+      scale.value = nextScale;
+      if (onScaleChange) {
+        runOnJS(emitScaleChange)(nextScale);
+      }
     })
     .onEnd(() => {
       savedScale.value = scale.value;
     });
 
-  // Pan gesture for moving
   const panGesture = Gesture.Pan()
     .enabled(enablePan)
-    .onUpdate((e: { translationX: number; translationY: number }) => {
-      positionX.value = startTranslateX.value + e.translationX;
-      positionY.value = startTranslateY.value + e.translationY;
-      onPositionChange?.(positionX.value, positionY.value);
+    .onStart(() => {
+      startTranslateX.value = positionX.value;
+      startTranslateY.value = positionY.value;
+    })
+    .onUpdate((e) => {
+      const nextX = startTranslateX.value + e.translationX;
+      const nextY = startTranslateY.value + e.translationY;
+      positionX.value = nextX;
+      positionY.value = nextY;
+      if (onPositionChange) {
+        runOnJS(emitPositionChange)(nextX, nextY);
+      }
     })
     .onEnd(() => {
-      // Check if the view is out of bounds
-      if (Math.abs(positionX.value) > boundaryX) {
-        positionX.value = withTiming(
-          boundaryX * (positionX.value > 0 ? 1 : -1),
-          { duration: 100 }
-        );
-      } else {
-        startTranslateX.value = positionX.value;
+      const clampedX = clamp(positionX.value, -resolvedBoundaryX, resolvedBoundaryX);
+      const clampedY = clamp(positionY.value, -resolvedBoundaryY, resolvedBoundaryY);
+
+      startTranslateX.value = clampedX;
+      startTranslateY.value = clampedY;
+
+      if (clampedX !== positionX.value) {
+        positionX.value = withTiming(clampedX, { duration: 100 });
+      }
+      if (clampedY !== positionY.value) {
+        positionY.value = withTiming(clampedY, { duration: 100 });
       }
 
-      if (Math.abs(positionY.value) > boundaryY) {
-        positionY.value = withTiming(
-          boundaryY * (positionY.value > 0 ? 1 : -1),
-          { duration: 100 }
-        );
-      } else {
-        startTranslateY.value = positionY.value;
+      if (onPositionChange) {
+        runOnJS(emitPositionChange)(clampedX, clampedY);
       }
-
-      onPositionChange?.(positionX.value, positionY.value);
     });
 
-  // Combine gestures based on what's enabled
-  const gesturesArray = [
+  const rotationGesture = Gesture.Rotation()
+    .enabled(enableRotation)
+    .onStart(() => {
+      savedRotation.value = rotation.value;
+    })
+    .onUpdate((e) => {
+      const nextRotation = savedRotation.value + (e.rotation * 180) / Math.PI;
+      rotation.value = nextRotation;
+      if (onRotationChange) {
+        runOnJS(emitRotationChange)(nextRotation);
+      }
+    })
+    .onEnd(() => {
+      savedRotation.value = rotation.value;
+    });
+
+  type SupportedGesture =
+    | ReturnType<typeof Gesture.Pinch>
+    | ReturnType<typeof Gesture.Pan>
+    | ReturnType<typeof Gesture.Rotation>;
+
+  const enabledGestures = [
     enablePinch ? pinchGesture : null,
     enablePan ? panGesture : null,
-  ];
+    enableRotation ? rotationGesture : null,
+  ].filter((gesture): gesture is SupportedGesture => gesture !== null);
 
-  // Filter out null values
-  const enabledGestures = gesturesArray.filter(Boolean) as ReturnType<typeof Gesture.Pinch>[];
-
-  // Default to a simple tap gesture if no gestures are enabled
-  // This prevents an error when spreading an empty array into Gesture.Race()
   const composed = enabledGestures.length > 0
-    ? Gesture.Race(...enabledGestures)
-    : Gesture.Tap().enabled(false); // Disabled tap gesture as fallback
+    ? Gesture.Simultaneous(...enabledGestures)
+    : Gesture.Tap().enabled(false);
 
-  // Animated styles for transformations
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { scale: scale.value },
-      { rotate: `${rotation}deg` },
+      { rotate: `${rotation.value}deg` },
       { translateX: positionX.value },
       { translateY: positionY.value },
     ],
   }));
 
-  //check if the action buttons are enabled
   const showActionButtons = Object.values(showButtons).some((value) => value);
 
   return (

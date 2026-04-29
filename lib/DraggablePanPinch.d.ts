@@ -1,5 +1,5 @@
 import React, { ReactNode } from "react";
-import { ViewStyle } from "react-native";
+import { StyleProp, ViewStyle } from "react-native";
 interface ActionButtons {
     zoomIn?: ReactNode;
     zoomOut?: ReactNode;
@@ -14,7 +14,7 @@ interface ShowActionButtons {
 }
 export interface DraggablePanPinchProps {
     children: ReactNode;
-    style?: ViewStyle;
+    style?: StyleProp<ViewStyle>;
     initialScale?: number;
     initialRotation?: number;
     maxScale?: number;
@@ -29,8 +29,8 @@ export interface DraggablePanPinchProps {
     onRotationChange?: (rotation: number) => void;
     showButtons?: ShowActionButtons;
     actionButtons?: ActionButtons;
-    actionButtonsContainerStyle?: ViewStyle;
-    actionButtonsStyle?: ViewStyle;
+    actionButtonsContainerStyle?: StyleProp<ViewStyle>;
+    actionButtonsStyle?: StyleProp<ViewStyle>;
     rotateDegree?: number;
     zoomScale?: number;
 }
