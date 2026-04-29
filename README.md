@@ -100,8 +100,6 @@ const App = () => {
 export default App;
 ```
 
-> **Important**: Make sure to wrap your app with `GestureHandlerRootView` as shown in the example.
-
 ## Props
 
 | Prop | Type | Default | Description |
