@@ -1,10 +1,14 @@
+
 # React Native Draggable Pan Pinch
 
 A lightweight React Native component for wrapping content with pan, pinch-to-zoom, and optional rotation gestures. It is a good fit for image viewers, document previews, maps, diagrams, and any UI that needs direct manipulation.
 
 ## Demo
+IOS:
+<img width="320" height="693" alt="ios-demo" src="https://github.com/user-attachments/assets/f80f7c91-4613-4bea-9142-de932528142b" />
 
-https://github.com/user-attachments/assets/2b2a6086-816e-4526-b838-9889db5ff7ec
+ANDROID:
+<img width="320" height="716" alt="android-demo" src="https://github.com/user-attachments/assets/904160af-4afa-4a84-b399-4b2f236b2d4d" />
 
 ## Features
 
